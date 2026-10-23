@@ -108,8 +108,10 @@ The owner then invites staff under **Users**.
   `App\Actions\Schools\CreateSchoolDefaults`.
 - `App\Domain\Calendar\SchoolCalendar` is the single place for season and
   closed-day rules (US-01, US-30): a course may only start on an operating
-  day, keeps its calendar window, gets no lesson on closed days inside it, and
-  may not run past the season end. Without a season nothing is bookable.
+  day; closed days are skipped as if they did not exist (a 3-day course
+  starting Tuesday with Thursday closed runs Tue, Wed, Fri); it never runs
+  past its latest end day (price table) or the season end, so a week with a
+  closed day may have fewer lessons. Without a season nothing is bookable.
 - Deleting a sport, level, age group, meeting point, add-on or voucher goes
   through `GuardsDeletion::deleteIfUnused()`. Each model's `usages()` list is
   empty for now and gets filled as price tables (step 3), students (step 4)

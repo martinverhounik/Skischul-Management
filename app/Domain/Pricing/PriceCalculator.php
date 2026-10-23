@@ -10,10 +10,12 @@ use App\Models\PriceTable;
  * Works out the price of a course from its price table (US-10, US-11).
  *
  * Group courses: the price per participant for the number of LESSON days,
- * times the number of participants (plan questions 6 and the closed-day
- * decision: only days with a lesson are charged; the end date stays).
- * If closed days push the lesson count below the table's shortest row,
- * the shortest row's day rate is used for each lesson day.
+ * times the number of participants (plan question 6 and the closed-day
+ * decision: only days with a lesson are charged). Closed days are skipped
+ * as if they did not exist, so this normally is the booked number of days;
+ * it is less only when the course reaches its latest end day first. If that
+ * leaves fewer days than the table's shortest row, the shortest row's day
+ * rate is used for each lesson day.
  *
  * Private lessons / guiding: the base price for the booked hours plus the
  * additional-participant fee from the same row for each further participant.

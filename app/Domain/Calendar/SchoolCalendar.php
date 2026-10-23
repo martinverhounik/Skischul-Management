@@ -14,8 +14,12 @@ use Illuminate\Support\Collection;
  * Rules:
  * - Without a configured season nothing is bookable.
  * - A course may only START on an operating day (in season, not closed).
- * - A multi-day course keeps its normal window (start + n days). Closed days
- *   inside the window get no lesson; the course resumes the next day.
+ * - A closed day is treated as if it did not exist: a course of N days has
+ *   its lessons on the next N operating days (owner decision, step 3).
+ * - A course never runs past its latest end day (the price table's end
+ *   weekday, e.g. Friday). If closed days leave fewer operating days before
+ *   that day, the course simply has fewer lessons that week, and only those
+ *   are charged.
  * - No course may run past the season end.
  */
 class SchoolCalendar
@@ -64,17 +68,20 @@ class SchoolCalendar
     }
 
     /**
-     * The lesson dates of a course starting on $start that runs for $days
-     * calendar days. Closed days in between are skipped.
+     * The lesson dates of a course of $days days starting on $start: the
+     * next $days operating days, skipping closed days, but never after
+     * $latestEnd (when given). The result can therefore be shorter than
+     * $days when closed days fall into that week.
      *
      * @return Collection<int, CarbonImmutable>
      *
      * @throws CalendarRuleViolation when the start is not allowed or the
-     *                               window runs past the season end
+     *                               course would run past the season end
      */
-    public function lessonDays(CarbonInterface $start, int $days): Collection
+    public function lessonDays(CarbonInterface $start, int $days, ?CarbonInterface $latestEnd = null): Collection
     {
         $start = CarbonImmutable::parse($start->toDateString());
+        $latestEnd = $latestEnd ? CarbonImmutable::parse($latestEnd->toDateString()) : null;
 
         if ($days < 1) {
             throw new CalendarRuleViolation(__('A course needs at least one day.'));
@@ -88,16 +95,27 @@ class SchoolCalendar
             throw new CalendarRuleViolation(__('The school is closed on this day.'));
         }
 
-        $end = $start->addDays($days - 1);
-        if (! $this->isInSeason($end)) {
-            throw new CalendarRuleViolation(__('The course would run past the end of the season (:date).', [
-                'date' => $this->school->season_ends_on->isoFormat('L'),
-            ]));
+        $lessons = collect();
+        $day = $start;
+
+        while ($lessons->count() < $days) {
+            if ($latestEnd && $day->gt($latestEnd)) {
+                break; // fewer lessons this week because of closed days
+            }
+
+            if (! $this->isInSeason($day)) {
+                throw new CalendarRuleViolation(__('The course would run past the end of the season (:date).', [
+                    'date' => $this->school->season_ends_on->isoFormat('L'),
+                ]));
+            }
+
+            if (! $this->isClosed($day)) {
+                $lessons->push($day);
+            }
+
+            $day = $day->addDay();
         }
 
-        return collect(range(0, $days - 1))
-            ->map(fn (int $offset) => $start->addDays($offset))
-            ->reject(fn (CarbonImmutable $day) => $this->isClosed($day))
-            ->values();
+        return $lessons;
     }
 }
