@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DashboardController;
 use App\Livewire\Account;
+use App\Livewire\Booking;
+use App\Livewire\Bookings;
 use App\Livewire\Instructors;
 use App\Livewire\Settings;
 use App\Livewire\Students;
@@ -37,6 +39,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('account', Account::class)->name('account');
+
+    // Booking (US-09 to US-13): back office only, staff and owners.
+    Route::get('booking', Booking\Shop::class)->name('booking');
+    Route::get('booking/checkout', Booking\Checkout::class)->name('booking.checkout');
+    Route::get('bookings/{booking}', Bookings\Show::class)->name('bookings.show');
 
     // Students (US-17 to US-19): staff and owners.
     Route::get('students', Students\Index::class)->name('students.index');

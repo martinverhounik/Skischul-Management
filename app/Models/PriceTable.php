@@ -118,7 +118,9 @@ class PriceTable extends Model
 
     protected function usages(): array
     {
-        // Step 5 adds: booking lines. A used price table should be switched off.
-        return [];
+        // A booked price table should be switched off instead.
+        return [
+            __('Bookings') => fn () => BookingLine::query()->where('price_table_id', $this->id)->count(),
+        ];
     }
 }

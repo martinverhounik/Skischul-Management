@@ -50,8 +50,10 @@ class Voucher extends Model
 
     protected function usages(): array
     {
-        // Step 5 adds: bookings. A used voucher should be deactivated instead.
-        return [];
+        // A voucher that was redeemed should be switched off instead.
+        return [
+            __('Bookings') => fn () => Booking::query()->where('voucher_id', $this->id)->count(),
+        ];
     }
 
     public function setCodeAttribute(string $value): void
@@ -65,10 +67,14 @@ class Voucher extends Model
      */
     public function rejectionReason(CarbonInterface $on): ?string
     {
+        // Compare calendar dates, not instants: "today" is in the school's
+        // time zone, the stored dates have none.
+        $day = $on->toDateString();
+
         return match (true) {
             ! $this->is_active => __('This voucher is no longer active.'),
-            $this->valid_from && $on->lt($this->valid_from->startOfDay()) => __('This voucher is not valid yet.'),
-            $this->valid_until && $on->gt($this->valid_until->endOfDay()) => __('This voucher has expired.'),
+            $this->valid_from && $day < $this->valid_from->toDateString() => __('This voucher is not valid yet.'),
+            $this->valid_until && $day > $this->valid_until->toDateString() => __('This voucher has expired.'),
             $this->max_uses !== null && $this->times_used >= $this->max_uses => __('This voucher has already been used up.'),
             default => null,
         };

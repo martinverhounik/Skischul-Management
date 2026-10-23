@@ -314,6 +314,9 @@ describe('vouchers (US-28)', function () {
             ->and($v->rejectionReason($day('2026-11-30')))->toBe(__('This voucher is not valid yet.'))
             ->and($v->rejectionReason($day('2027-01-01')))->toBe(__('This voucher has expired.'));
 
+        // Early morning in Vienna on the first day after the end is already expired.
+        expect($v->rejectionReason(Carbon\Carbon::parse('2027-01-01 00:30', 'Europe/Vienna')))->toBe(__('This voucher has expired.'));
+
         $v->forceFill(['times_used' => 2])->save();
         expect($v->rejectionReason($day('2026-12-15')))->toBe(__('This voucher has already been used up.'));
 

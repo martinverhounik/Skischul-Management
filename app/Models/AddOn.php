@@ -31,7 +31,8 @@ class AddOn extends Model
 
     protected function usages(): array
     {
-        // Step 5 adds: bookings.
-        return [];
+        return [
+            __('Bookings') => fn () => BookingAddOn::query()->where('add_on_id', $this->id)->count(),
+        ];
     }
 }

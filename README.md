@@ -16,8 +16,8 @@ comments and tests.
 | 2 | School settings | US-01–06, US-08, US-28 | **done** |
 | 3 | Price tables | US-07 | **done** |
 | 4 | Students & instructors | US-17–21 | **done** |
-| 5 | Booking (shop, cart, checkout, email) | US-09–13, US-29 | next |
-| 6 | Booking list | US-14–16 | |
+| 5 | Booking (shop, cart, checkout, email) | US-09–13, US-29 | **done** |
+| 6 | Booking list | US-14–16 | next |
 | 7 | Grouping & instructor assignment | US-22–24 | |
 | 8 | Dashboard & calendar | US-25, US-26 | |
 
@@ -156,6 +156,31 @@ The owner then invites staff under **Users**.
   teaches (plan question 13, used as a warning in step 7).
 - The social security number is only format-checked (4–30 characters) so
   schools outside Austria work too.
+
+### Booking (step 5)
+
+- `App\Domain\Booking\BookingRules::check()` holds every booking rule and
+  returns a `Quote` (lesson dates, price, errors, age warnings). It runs live
+  in the configurator, for every cart line, and again inside `PlaceOrder`.
+  - Group: allowed start weekday, operating day, days within min/max, lessons
+    = next N operating days but never past the price table's end weekday;
+    price for the number of lessons × participants.
+  - Private/guiding: open day, start time + hours inside the private window;
+    the time option (morning / afternoon / full day) follows from start and
+    length (plan question 8); min hours of that option; base + extra fee.
+  - Participants: skill level must match (hard); age outside the age groups
+    needs an explicit "book anyway" (stored as `age_override`).
+- `Cart` lives in the session per school and stores choices only; prices are
+  always recalculated.
+- `PlaceOrder` locks the school row (booking numbers `YYYY-NNNN`, voucher
+  limits), re-checks everything, writes booking, lines, participants,
+  `lesson_days`, add-ons and a history entry in one transaction, then sends
+  the confirmation. A failing email is logged as `email_failed` and never
+  rolls back the booking (US-29).
+- Bookings have `source` + `external_id` (unique per school) for the later
+  book2ski / CheckYeti imports.
+- Vouchers compare calendar dates in the school's time zone (a bug found by
+  the tests: early-morning checks could accept an expired voucher).
 
 ### Language
 
