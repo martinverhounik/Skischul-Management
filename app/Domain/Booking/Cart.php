@@ -11,14 +11,48 @@ use Illuminate\Support\Str;
  * The office's shopping cart (US-12), kept in the user's session and per
  * school. It only stores the choices; prices and rules are always worked
  * out fresh by BookingRules, so a changed setting can't leave a stale price.
+ *
+ * Editing an existing booking (US-16) uses its own cart, forBooking($id),
+ * so a half-finished new booking is not mixed up with it.
  */
 class Cart
 {
+    private ?int $bookingId = null;
+
     public function __construct(private Session $session, private BookingRules $rules) {}
+
+    /** The cart used while changing an existing booking (null = a new booking). */
+    public function forBooking(?int $bookingId): self
+    {
+        $cart = clone $this;
+        $cart->bookingId = $bookingId;
+
+        return $cart;
+    }
+
+    public function bookingId(): ?int
+    {
+        return $this->bookingId;
+    }
+
+    /** Replace the whole content, e.g. when loading a booking for editing. */
+    public function fill(School $school, array $items, array $addOns): void
+    {
+        $data = ['items' => [], 'add_ons' => []];
+        foreach ($items as $item) {
+            $data['items'][(string) Str::uuid()] = $this->clean($item);
+        }
+        foreach ($addOns as $id => $quantity) {
+            if ($quantity > 0) {
+                $data['add_ons'][(int) $id] = (int) $quantity;
+            }
+        }
+        $this->put($school, $data);
+    }
 
     private function key(School $school): string
     {
-        return "cart.{$school->id}";
+        return $this->bookingId ? "cart.{$school->id}.booking.{$this->bookingId}" : "cart.{$school->id}";
     }
 
     private function data(School $school): array

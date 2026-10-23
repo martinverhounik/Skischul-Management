@@ -3,7 +3,8 @@
     $user = auth()->user();
     $nav = [
         ['route' => 'dashboard', 'label' => __('Dashboard'), 'show' => true, 'match' => 'dashboard'],
-        ['route' => 'booking', 'label' => __('Booking'), 'show' => true, 'match' => 'booking*'],
+        ['route' => 'booking', 'label' => __('Booking'), 'show' => true, 'match' => ['booking', 'booking.*']],
+        ['route' => 'bookings.index', 'label' => __('Bookings'), 'show' => true, 'match' => 'bookings.*'],
         ['route' => 'students.index', 'label' => __('Students'), 'show' => true, 'match' => 'students.*'],
         ['route' => 'instructors.index', 'label' => __('Instructors'), 'show' => true, 'match' => 'instructors.*'],
         ['route' => 'users.index', 'label' => __('Users'), 'show' => $user->can('viewAny', App\Models\User::class), 'match' => 'users.*'],

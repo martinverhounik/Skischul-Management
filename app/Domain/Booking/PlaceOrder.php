@@ -3,7 +3,6 @@
 namespace App\Domain\Booking;
 
 use App\Enums\PaymentMethod;
-use App\Models\AddOn;
 use App\Models\Booking;
 use App\Models\School;
 use App\Models\User;
@@ -23,7 +22,7 @@ use Throwable;
  */
 class PlaceOrder
 {
-    public function __construct(private BookingRules $rules) {}
+    public function __construct(private BookingWriter $writer) {}
 
     /**
      * @param  list<array>  $items  cart items
@@ -32,27 +31,13 @@ class PlaceOrder
      */
     public function handle(School $school, User $user, array $items, array $addOns, array $booker, ?string $voucherCode): Booking
     {
-        if ($items === []) {
-            throw ValidationException::withMessages(['cart' => __('The cart is empty.')]);
-        }
-
         $booking = DB::transaction(function () use ($school, $user, $items, $addOns, $booker, $voucherCode) {
             // Serialises orders of one school, for booking numbers and voucher limits.
             School::query()->whereKey($school->id)->lockForUpdate()->first();
 
-            $quotes = [];
-            foreach (array_values($items) as $i => $item) {
-                $quote = $this->rules->check($school, $item);
-                if (! $quote->isValid()) {
-                    $message = collect($quote->errors)->first() ?? collect($quote->ageWarnings)->first();
-                    throw ValidationException::withMessages(['cart' => __('Course :n: :message', ['n' => $i + 1, 'message' => $message])]);
-                }
-                $quotes[] = $quote;
-            }
-
-            $extras = AddOn::query()->whereKey(array_keys($addOns))->where('is_active', true)->get();
-            $subtotal = array_sum(array_map(fn (Quote $q) => $q->priceCents, $quotes))
-                + $extras->sum(fn (AddOn $a) => $a->price_cents * (int) $addOns[$a->id]);
+            $quotes = $this->writer->checkAll($school, $items);
+            $extras = $this->writer->activeAddOns($addOns);
+            $subtotal = $this->writer->subtotal($quotes, $extras, $addOns);
 
             $voucher = null;
             $discount = 0;
@@ -66,18 +51,7 @@ class PlaceOrder
                 $voucher->increment('times_used');
             }
 
-            $booking = new Booking([
-                'booker_name' => $booker['booker_name'],
-                'email' => mb_strtolower($booker['email']),
-                'phone' => $booker['phone'] ?: null,
-                'street' => $booker['street'],
-                'house_number' => $booker['house_number'],
-                'postal_code' => $booker['postal_code'],
-                'city' => $booker['city'],
-                'country' => strtoupper($booker['country']),
-                'payment_method' => PaymentMethod::from($booker['payment_method']),
-                'notes' => $booker['notes'] ?? null ?: null,
-            ]);
+            $booking = new Booking(self::bookerAttributes($booker));
             $booking->forceFill([
                 'school_id' => $school->id,
                 'number' => $this->nextNumber($school),
@@ -89,46 +63,7 @@ class PlaceOrder
                 'created_by' => $user->id,
             ])->save();
 
-            foreach ($quotes as $quote) {
-                $line = $booking->lines()->create([
-                    'school_id' => $school->id,
-                    'price_table_id' => $quote->priceTable->id,
-                    'sport_id' => $quote->sport->id,
-                    'course_type' => $quote->priceTable->course_type,
-                    'timeslot_key' => $quote->option,
-                    'start_date' => $quote->startDate(),
-                    'end_date' => $quote->endDate(),
-                    'units' => $quote->units,
-                    'lesson_count' => $quote->lessonDates->count(),
-                    'start_time' => $quote->startTime,
-                    'price_cents' => $quote->priceCents,
-                ]);
-
-                foreach ($quote->participants as $id => $p) {
-                    $line->students()->attach($id, ['age_at_start' => $p['age'], 'age_override' => $p['age_override']]);
-                }
-
-                foreach ($quote->lessonDates as $date) {
-                    $line->lessonDays()->create([
-                        'school_id' => $school->id,
-                        'date' => $date->toDateString(),
-                        'timeslot_key' => $quote->option,
-                        'starts_at' => $quote->startTime,
-                        'ends_at' => $quote->endTime,
-                    ]);
-                }
-            }
-
-            foreach ($extras as $addOn) {
-                $quantity = (int) $addOns[$addOn->id];
-                $booking->addOns()->create([
-                    'add_on_id' => $addOn->id,
-                    'quantity' => $quantity,
-                    'unit_price_cents' => $addOn->price_cents,
-                    'total_cents' => $addOn->price_cents * $quantity,
-                ]);
-            }
-
+            $this->writer->writeContent($booking, $school, $quotes, $extras, $addOns);
             $booking->record('created', $user, ['total_cents' => $booking->total_cents]);
 
             return $booking;
@@ -137,6 +72,23 @@ class PlaceOrder
         $this->sendConfirmation($booking, $school, $user);
 
         return $booking;
+    }
+
+    /** The booker / billing fields as stored on the booking. */
+    public static function bookerAttributes(array $booker): array
+    {
+        return [
+            'booker_name' => $booker['booker_name'],
+            'email' => mb_strtolower($booker['email']),
+            'phone' => ($booker['phone'] ?? '') ?: null,
+            'street' => $booker['street'],
+            'house_number' => $booker['house_number'],
+            'postal_code' => $booker['postal_code'],
+            'city' => $booker['city'],
+            'country' => strtoupper($booker['country']),
+            'payment_method' => PaymentMethod::from($booker['payment_method']),
+            'notes' => ($booker['notes'] ?? '') ?: null,
+        ];
     }
 
     /** US-29: a failing email never loses the booking. */

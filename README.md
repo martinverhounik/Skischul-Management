@@ -17,8 +17,8 @@ comments and tests.
 | 3 | Price tables | US-07 | **done** |
 | 4 | Students & instructors | US-17–21 | **done** |
 | 5 | Booking (shop, cart, checkout, email) | US-09–13, US-29 | **done** |
-| 6 | Booking list | US-14–16 | next |
-| 7 | Grouping & instructor assignment | US-22–24 | |
+| 6 | Booking list | US-14–16 | **done** |
+| 7 | Grouping & instructor assignment | US-22–24 | next |
 | 8 | Dashboard & calendar | US-25, US-26 | |
 
 ## Stack
@@ -181,6 +181,24 @@ The owner then invites staff under **Users**.
   book2ski / CheckYeti imports.
 - Vouchers compare calendar dates in the school's time zone (a bug found by
   the tests: early-morning checks could accept an expired voucher).
+
+### Booking list (step 6)
+
+- `/bookings`: active bookings (not handled, not cancelled) ordered by first
+  course date; a second, paginated table holds handled and cancelled ones.
+  Each booking is a `<tbody>` with its courses and students underneath.
+- `ChangeBookingStatus`: paid/unpaid, handled, cancel (kept and marked, the
+  voucher use is given back), delete (owners only, `BookingPolicy`).
+  Every change is a `booking_events` row with the user.
+- Editing (US-16) reuses the booking screen: `ManagesBookings::editBooking()`
+  loads the booking into its own cart (`Cart::forBooking($id)`), the shop and
+  checkout run with `?booking={id}`, and `UpdateBooking` re-checks every rule
+  and rewrites the courses. The voucher stays; its discount is recalculated
+  without counting a second use.
+- **Note for step 7:** `BookingWriter::writeContent()` currently replaces a
+  booking's lines and lesson days on every change. Once groups and instructor
+  assignments hang off lesson days, unchanged lesson days must be kept (or
+  assignments re-attached) so a small edit does not drop them.
 
 ### Language
 

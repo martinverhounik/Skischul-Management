@@ -1,8 +1,8 @@
 <div class="flex flex-wrap items-start gap-5">
     <form wire:submit="placeOrder" class="flex min-w-0 flex-[999_1_560px] flex-col gap-5">
         <div class="flex flex-col gap-1 px-1">
-            <a href="{{ route('booking') }}" wire:navigate class="label-caps hover:text-signal">← {{ __('Back to booking') }}</a>
-            <h1 class="font-display-narrow text-4xl">{{ __('Checkout') }}</h1>
+            <a href="{{ route('booking', $editedBooking ? ['booking' => $editedBooking->id] : []) }}" wire:navigate class="label-caps hover:text-signal">← {{ __('Back to booking') }}</a>
+            <h1 class="font-display-narrow text-4xl">{{ $editedBooking ? __('Save changes to :number', ['number' => $editedBooking->number]) : __('Checkout') }}</h1>
         </div>
 
         @error('cart')
@@ -56,8 +56,14 @@
             </div>
         </x-ui.card>
 
-        <div class="flex justify-end">
-            <x-ui.button class="h-12 px-8" :disabled="! $allValid" wire:loading.attr="disabled">{{ __('Place booking') }}</x-ui.button>
+        <div class="flex flex-wrap items-center justify-end gap-4">
+            @if ($editedBooking)
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" wire:model="sendUpdate" class="size-4 accent-ink">
+                    {{ __('Send the booker an updated confirmation') }}
+                </label>
+            @endif
+            <x-ui.button class="h-12 px-8" :disabled="! $allValid" wire:loading.attr="disabled">{{ $editedBooking ? __('Save changes') : __('Place booking') }}</x-ui.button>
         </div>
     </form>
 
@@ -95,10 +101,10 @@
         <div class="flex flex-col gap-2 border-t border-white/15 pt-4">
             @if ($voucherCode)
                 <div class="flex items-center justify-between text-sm">
-                    <span>{{ __('Voucher :code', ['code' => $voucherCode]) }} <button type="button" wire:click="removeVoucher" class="ml-1 underline">{{ __('remove') }}</button></span>
+                    <span>{{ __('Voucher :code', ['code' => $voucherCode]) }} @unless ($editedBooking)<button type="button" wire:click="removeVoucher" class="ml-1 underline">{{ __('remove') }}</button>@endunless</span>
                     <span class="tabular-nums">−{{ App\Support\Money::format($discount) }}</span>
                 </div>
-            @else
+            @elseif (! $editedBooking)
                 <form wire:submit="applyVoucher" class="flex gap-2">
                     <label for="voucher" class="sr-only">{{ __('Voucher code') }}</label>
                     <input id="voucher" wire:model="voucherInput" placeholder="{{ __('Voucher code') }}" class="h-10 min-w-0 flex-1 rounded-full bg-white px-4 text-sm uppercase text-ink">

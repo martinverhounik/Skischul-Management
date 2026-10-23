@@ -43,6 +43,7 @@ Route::middleware('auth')->group(function () {
     // Booking (US-09 to US-13): back office only, staff and owners.
     Route::get('booking', Booking\Shop::class)->name('booking');
     Route::get('booking/checkout', Booking\Checkout::class)->name('booking.checkout');
+    Route::get('bookings', Bookings\Index::class)->name('bookings.index');
     Route::get('bookings/{booking}', Bookings\Show::class)->name('bookings.show');
 
     // Students (US-17 to US-19): staff and owners.

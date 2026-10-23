@@ -11,6 +11,13 @@
             <div role="status" class="rounded-[var(--radius-card)] bg-ink px-5 py-3 text-sm text-white">{{ $status }}</div>
         @endif
 
+        @if ($editedBooking)
+            <div class="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-white px-5 py-3 text-sm ring-2 ring-signal">
+                <span>{{ __('You are changing booking :number (:name). Nothing is saved until you confirm at the end.', ['number' => $editedBooking->number, 'name' => $editedBooking->booker_name]) }}</span>
+                <a href="{{ route('bookings.show', $editedBooking) }}" wire:navigate class="underline hover:text-signal">{{ __('Stop changing') }}</a>
+            </div>
+        @endif
+
         @if (! $school->hasSeason())
             <div role="alert" class="rounded-[var(--radius-card)] bg-white px-5 py-4 text-sm">
                 <span class="font-semibold text-signal">{{ __('No season is set yet.') }}</span>
@@ -360,10 +367,10 @@
             <span class="font-display-narrow text-3xl tabular-nums">{{ App\Support\Money::format($subtotal) }}</span>
         </div>
 
-        <a href="{{ route('booking.checkout') }}" wire:navigate
+        <a href="{{ route('booking.checkout', $editBooking ? ['booking' => $editBooking] : []) }}" wire:navigate
            class="flex h-12 items-center justify-center rounded-full bg-white font-semibold text-ink hover:bg-sand {{ $cartQuotes === [] ? 'pointer-events-none opacity-40' : '' }}"
            @if ($cartQuotes === []) aria-disabled="true" tabindex="-1" @endif>
-            {{ __('Go to checkout') }}
+            {{ $editBooking ? __('Continue to save changes') : __('Go to checkout') }}
         </a>
     </aside>
 </div>

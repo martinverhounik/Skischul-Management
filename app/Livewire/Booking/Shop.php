@@ -11,6 +11,7 @@ use App\Enums\TimeslotKey;
 use App\Livewire\Forms\StudentForm;
 use App\Models\AddOn;
 use App\Models\AgeGroup;
+use App\Models\Booking;
 use App\Models\PriceTable;
 use App\Models\School;
 use App\Models\SkillLevel;
@@ -66,6 +67,19 @@ class Shop extends Component
 
     public ?string $status = null;
 
+    /** Set when an existing booking is being changed (US-16). */
+    #[Url(as: 'booking', except: null)]
+    public ?int $editBooking = null;
+
+    public function mount(): void
+    {
+        if ($this->editBooking !== null) {
+            $booking = Booking::query()->findOrFail($this->editBooking);
+            $this->authorize('update', $booking);
+            abort_if($booking->isCancelled(), 404);
+        }
+    }
+
     private function school(): School
     {
         return app(CurrentSchool::class)->get()->loadMissing('timeslots');
@@ -73,7 +87,7 @@ class Shop extends Component
 
     private function cart(): Cart
     {
-        return app(Cart::class);
+        return app(Cart::class)->forBooking($this->editBooking);
     }
 
     // ------------------------------------------------------------------
@@ -337,6 +351,7 @@ class Shop extends Component
 
         return view('livewire.booking.shop', [
             'school' => $school,
+            'editedBooking' => $this->editBooking ? Booking::query()->find($this->editBooking) : null,
             // Named differently from the $from / $to filter properties.
             'windowFrom' => $from,
             'windowTo' => $to,

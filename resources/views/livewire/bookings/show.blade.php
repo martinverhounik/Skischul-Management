@@ -8,10 +8,30 @@
             <span class="label-caps">{{ __('Booking') }} · {{ $booking->source->label() }}</span>
             <h1 class="font-display-narrow text-4xl">{{ $booking->number }} · {{ $booking->booker_name }}</h1>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <span class="rounded-full px-3 py-1 text-sm {{ $booking->isPaid() ? 'bg-ink text-white' : 'bg-signal text-white' }}">{{ $booking->payment_status->label() }}</span>
+        <div class="flex flex-wrap items-center gap-2">
+            @if ($booking->isCancelled())
+                <span class="rounded-full bg-ink px-3 py-1 text-sm font-semibold text-white">{{ __('Cancelled') }} · {{ $booking->cancelled_at->timezone(auth()->user()->school->timezone)->isoFormat('L') }}</span>
+            @else
+                <button type="button" wire:click="togglePaid({{ $booking->id }})" class="rounded-full px-3 py-1 text-sm font-semibold {{ $booking->isPaid() ? 'bg-ink text-white' : 'bg-signal text-white' }}"
+                        aria-label="{{ $booking->isPaid() ? __('Mark :number as unpaid', ['number' => $booking->number]) : __('Mark :number as paid', ['number' => $booking->number]) }}">{{ $booking->payment_status->label() }}</button>
+                @if ($booking->isHandled())<span class="rounded-full bg-sand px-3 py-1 text-sm">{{ __('Handled') }}</span>@endif
+            @endif
             <span class="rounded-full bg-white px-3 py-1 text-sm">{{ $booking->payment_method->label() }}</span>
         </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2 px-1">
+        <x-ui.button variant="ghost" :href="route('bookings.index')" wire:navigate>← {{ __('All bookings') }}</x-ui.button>
+        @unless ($booking->isCancelled())
+            <x-ui.button type="button" variant="secondary" wire:click="toggleHandled({{ $booking->id }})">{{ $booking->isHandled() ? __('Back to active') : __('Mark as handled') }}</x-ui.button>
+            <x-ui.button type="button" variant="secondary" wire:click="editBooking({{ $booking->id }})">{{ __('Change booking') }}</x-ui.button>
+            <x-ui.button type="button" variant="ghost" wire:click="cancelBooking({{ $booking->id }})"
+                         wire:confirm="{{ __('Cancel booking :number? It stays in the list, marked as cancelled.', ['number' => $booking->number]) }}">{{ __('Cancel booking') }}</x-ui.button>
+        @endunless
+        @can('delete', $booking)
+            <x-ui.button type="button" variant="danger" wire:click="deleteBooking({{ $booking->id }})"
+                         wire:confirm="{{ __('Delete booking :number for good? This cannot be undone.', ['number' => $booking->number]) }}">{{ __('Delete') }}</x-ui.button>
+        @endcan
     </div>
 
     <div class="grid gap-5 lg:grid-cols-[1fr_320px]">

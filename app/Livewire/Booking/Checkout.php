@@ -4,11 +4,14 @@ namespace App\Livewire\Booking;
 
 use App\Domain\Booking\Cart;
 use App\Domain\Booking\PlaceOrder;
+use App\Domain\Booking\UpdateBooking;
 use App\Enums\PaymentMethod;
+use App\Models\Booking;
 use App\Models\Voucher;
 use App\Support\CurrentSchool;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
@@ -44,11 +47,36 @@ class Checkout extends Component
     /** The voucher that was accepted, if any. */
     public ?string $voucherCode = null;
 
+    /** Set when an existing booking is being changed (US-16). */
+    #[Url(as: 'booking', except: null)]
+    public ?int $editBooking = null;
+
+    /** Send the booker an updated confirmation after a change. */
+    public bool $sendUpdate = true;
+
     public function mount(): void
     {
-        if ($this->cart()->isEmpty($this->school())) {
-            $this->redirectRoute('booking', navigate: true);
+        if ($this->editBooking !== null) {
+            $booking = $this->editedBooking();
+            $this->fill($booking->only('booker_name', 'email', 'street', 'house_number', 'postal_code', 'city', 'country'));
+            $this->phone = $booking->phone ?? '';
+            $this->notes = $booking->notes ?? '';
+            $this->payment_method = $booking->payment_method->value;
+            $this->voucherCode = $booking->voucher_code;
         }
+
+        if ($this->cart()->isEmpty($this->school())) {
+            $this->redirectRoute('booking', $this->editBooking ? ['booking' => $this->editBooking] : [], navigate: true);
+        }
+    }
+
+    private function editedBooking(): Booking
+    {
+        $booking = Booking::query()->findOrFail($this->editBooking);
+        $this->authorize('update', $booking);
+        abort_if($booking->isCancelled(), 404);
+
+        return $booking;
     }
 
     private function school()
@@ -58,12 +86,15 @@ class Checkout extends Component
 
     private function cart(): Cart
     {
-        return app(Cart::class);
+        return app(Cart::class)->forBooking($this->editBooking);
     }
 
     /** US-13 / US-28: only an active, unexpired voucher is accepted. */
     public function applyVoucher(): void
     {
+        if ($this->editBooking !== null) {
+            return; // the voucher of an existing booking stays as it is
+        }
         $this->resetErrorBag('voucherInput');
         $code = mb_strtoupper(trim($this->voucherInput));
         if ($code === '') {
@@ -122,6 +153,21 @@ class Checkout extends Component
 
         $school = $this->school();
 
+        if ($this->editBooking !== null) {
+            $booking = app(UpdateBooking::class)->handle(
+                $this->editedBooking(), $school, auth()->user(),
+                array_values($this->cart()->items($school)), $this->cart()->addOns($school), $data,
+            );
+            $this->cart()->clear($school);
+            if ($this->sendUpdate) {
+                $placeOrder->sendConfirmation($booking, $school, auth()->user());
+            }
+            session()->flash('status', __('Booking :number has been changed.', ['number' => $booking->number]));
+            $this->redirectRoute('bookings.show', $booking, navigate: true);
+
+            return;
+        }
+
         try {
             $booking = $placeOrder->handle(
                 $school,
@@ -156,12 +202,15 @@ class Checkout extends Component
         $quotes = $this->cart()->quotes($school);
         $addOnLines = $this->cart()->addOnLines($school);
         $subtotal = $this->cart()->subtotal($school);
-        $voucher = $this->voucherCode ? Voucher::query()->where('code', $this->voucherCode)->first() : null;
+        $voucher = $this->editBooking
+            ? $this->editedBooking()->voucher
+            : ($this->voucherCode ? Voucher::query()->where('code', $this->voucherCode)->first() : null);
         $discount = $voucher ? $voucher->discountFor($subtotal) : 0;
 
         $participants = collect($quotes)->flatMap(fn ($q) => collect($q->participants)->map(fn ($p) => $p['student']->fullName()))->unique()->values();
 
         return view('livewire.booking.checkout', [
+            'editedBooking' => $this->editBooking ? $this->editedBooking() : null,
             'quotes' => $quotes,
             'addOnLines' => $addOnLines,
             'subtotal' => $subtotal,

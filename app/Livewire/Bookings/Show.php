@@ -3,16 +3,30 @@
 namespace App\Livewire\Bookings;
 
 use App\Domain\Booking\PlaceOrder;
+use App\Livewire\Concerns\ManagesBookings;
 use App\Models\Booking;
 use App\Support\CurrentSchool;
 use Livewire\Component;
 
-/** One booking with everything in it. The booking list follows in step 6. */
+/** One booking with everything in it, and its actions (US-15, US-16). */
 class Show extends Component
 {
+    use ManagesBookings;
+
     public Booking $booking;
 
-    public ?string $status = null;
+    public function mount(Booking $booking): void
+    {
+        // The link is already resolved inside the user's school; this is a
+        // second, independent check.
+        $this->authorize('update', $booking);
+        $this->booking = $booking;
+    }
+
+    protected function afterBookingChange(): void
+    {
+        $this->booking->refresh();
+    }
 
     public function resendConfirmation(PlaceOrder $placeOrder): void
     {
