@@ -32,6 +32,9 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /** Same defaults as the database, so new objects behave correctly before a reload. */
+    protected $attributes = ['role' => 'staff', 'is_active' => true];
+
     /**
      * school_id, role and is_active are deliberately not mass assignable:
      * they are only changed through explicit, authorised actions.

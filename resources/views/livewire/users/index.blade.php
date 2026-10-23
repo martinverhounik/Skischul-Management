@@ -15,11 +15,11 @@
         </x-slot:actions>
 
         @if ($showInvite)
-            <form wire:submit="invite" class="grid gap-4 rounded-xl bg-white p-4 sm:grid-cols-[1fr_1fr_220px_auto] sm:items-end">
+            <form wire:submit="invite" class="grid gap-4 rounded-xl bg-white p-4 sm:grid-cols-[1fr_1fr_220px_auto] sm:items-start">
                 <x-ui.input :label="__('Name')" name="name" wire:model="name" required autocomplete="off" />
                 <x-ui.input :label="__('Email')" name="email" type="email" wire:model="email" required autocomplete="off" />
                 <x-ui.select :label="__('Role')" name="role" wire:model="role" :options="$roles" required />
-                <x-ui.button>{{ __('Send invitation') }}</x-ui.button>
+                <x-ui.button class="sm:mt-[22px]">{{ __('Send invitation') }}</x-ui.button>
                 <p class="text-xs text-muted sm:col-span-4">{{ __('The person gets an email with a link to set their own password. The link is valid for 72 hours.') }}</p>
             </form>
         @endif

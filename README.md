@@ -13,8 +13,8 @@ comments and tests.
 | Step | Content | Stories | State |
 | --- | --- | --- | --- |
 | 1 | Foundation: schools, login, roles, invitations, users | US-27, US-31 | **done** |
-| 2 | School settings | US-01–06, US-08, US-28 | next |
-| 3 | Price tables | US-07 | |
+| 2 | School settings | US-01–06, US-08, US-28 | **done** |
+| 3 | Price tables | US-07 | next |
 | 4 | Students & instructors | US-17–21 | |
 | 5 | Booking (shop, cart, checkout, email) | US-09–13, US-29 | |
 | 6 | Booking list | US-14–16 | |
@@ -98,6 +98,26 @@ The owner then invites staff under **Users**.
   `EnsureUserIsActive` middleware logs them out on the next request. Users
   are never deleted, so history keeps pointing at them.
 - A school always keeps at least one active owner (`App\Actions\Users\ManageUser`).
+
+### School settings (step 2)
+
+- Owner-only pages under `/settings`, one Livewire component each. The simple
+  lists share `App\Livewire\Settings\ListSettings` (add, inline edit, delete,
+  reorder). `RequiresAdmin` re-checks the owner role on every Livewire request.
+- New schools get default timeslots, sports, skill levels and age groups from
+  `App\Actions\Schools\CreateSchoolDefaults`.
+- `App\Domain\Calendar\SchoolCalendar` is the single place for season and
+  closed-day rules (US-01, US-30): a course may only start on an operating
+  day, keeps its calendar window, gets no lesson on closed days inside it, and
+  may not run past the season end. Without a season nothing is bookable.
+- Deleting a sport, level, age group, meeting point, add-on or voucher goes
+  through `GuardsDeletion::deleteIfUnused()`. Each model's `usages()` list is
+  empty for now and gets filled as price tables (step 3), students (step 4)
+  and bookings (step 5) are added.
+- Money: `App\Support\Money` parses "12,50", "12.50", "1.234,50" into cents.
+  Voucher percentages are stored as hundredths (1000 = 10 %).
+- Dates: SQLite stores `date` columns with a time part, so query them with
+  `whereDate()`.
 
 ### Language
 

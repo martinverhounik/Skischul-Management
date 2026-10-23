@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\Schools\CreateSchoolDefaults;
 use App\Actions\Users\InviteUser;
 use App\Enums\Role;
 use App\Models\School;
@@ -27,7 +28,7 @@ class CreateSchool extends Command
 
     protected $description = 'Create a ski school and email an invitation to its first owner';
 
-    public function handle(InviteUser $inviteUser): int
+    public function handle(InviteUser $inviteUser, CreateSchoolDefaults $defaults): int
     {
         $validator = Validator::make([
             'email' => $this->argument('email'),
@@ -60,6 +61,8 @@ class CreateSchool extends Command
             'timezone' => $this->option('timezone'),
             'week_starts_on' => 0,
         ]);
+
+        $defaults->handle($school);
 
         /** @var User $owner */
         $owner = $inviteUser->handle($school, $this->argument('owner'), $this->argument('email'), Role::Owner);

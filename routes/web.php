@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DashboardController;
 use App\Livewire\Account;
+use App\Livewire\Settings;
 use App\Livewire\Users;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -39,4 +40,18 @@ Route::middleware('auth')->group(function () {
     Route::get('users', Users\Index::class)
         ->middleware('can:viewAny,'.User::class)
         ->name('users.index');
+
+    // Global school settings (build step 2): owner only (US-27).
+    Route::prefix('settings')->name('settings.')->middleware('can:admin')->group(function () {
+        Route::redirect('/', '/settings/general');
+        Route::get('general', Settings\General::class)->name('general');
+        Route::get('season', Settings\Season::class)->name('season');
+        Route::get('times', Settings\Times::class)->name('times');
+        Route::get('sports', Settings\Sports::class)->name('sports');
+        Route::get('skill-levels', Settings\SkillLevels::class)->name('skill-levels');
+        Route::get('age-groups', Settings\AgeGroups::class)->name('age-groups');
+        Route::get('meeting-points', Settings\MeetingPoints::class)->name('meeting-points');
+        Route::get('add-ons', Settings\AddOns::class)->name('add-ons');
+        Route::get('vouchers', Settings\Vouchers::class)->name('vouchers');
+    });
 });

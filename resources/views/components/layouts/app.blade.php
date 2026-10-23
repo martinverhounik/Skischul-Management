@@ -2,8 +2,9 @@
 @php
     $user = auth()->user();
     $nav = [
-        ['route' => 'dashboard', 'label' => __('Dashboard'), 'show' => true],
-        ['route' => 'users.index', 'label' => __('Users'), 'show' => $user->can('viewAny', App\Models\User::class)],
+        ['route' => 'dashboard', 'label' => __('Dashboard'), 'show' => true, 'match' => 'dashboard'],
+        ['route' => 'users.index', 'label' => __('Users'), 'show' => $user->can('viewAny', App\Models\User::class), 'match' => 'users.*'],
+        ['route' => 'settings.general', 'label' => __('Settings'), 'show' => $user->can('admin'), 'match' => 'settings.*'],
     ];
 @endphp
 <!DOCTYPE html>
@@ -27,7 +28,7 @@
             <nav aria-label="{{ __('Main navigation') }}" class="flex flex-wrap items-center gap-1 rounded-full bg-paper p-1">
                 @foreach ($nav as $item)
                     @continue(! $item['show'])
-                    @php($active = request()->routeIs($item['route'].'*'))
+                    @php($active = request()->routeIs($item['match']))
                     <a href="{{ route($item['route']) }}"
                        @if ($active) aria-current="page" @endif
                        class="rounded-full px-4 py-2 text-sm font-medium {{ $active ? 'bg-ink text-white' : 'text-ink hover:bg-white' }}">
