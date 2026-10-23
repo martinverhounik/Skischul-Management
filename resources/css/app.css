@@ -1,0 +1,63 @@
+/* Fonts are bundled locally (no Google Fonts request, for GDPR). */
+@import '@fontsource-variable/archivo/wdth.css';
+@import '@fontsource-variable/inter-tight/index.css';
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../vendor/livewire/livewire/src/**/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+/*
+ * Design tokens, taken from the approved design:
+ * dark ink, one signal red, light greys, Helvetica-style body text and a
+ * narrow, heavy display face for headings.
+ */
+@theme {
+    --font-sans: 'Helvetica Neue', Helvetica, 'Inter Tight Variable', Arial, sans-serif;
+    --font-display: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
+
+    --color-ink: #171920;
+    --color-ink-soft: #2a2d35;
+    --color-signal: #bb0909;
+    --color-signal-dark: #8f0707;
+    --color-sand: #d9d7d0;
+    --color-paper: #f0f0f0;
+    --color-ground: #d5d9dc;
+    --color-muted: #4a4e55;
+    --color-line: #8a8f96;
+    --color-hairline: #e3e5e7;
+
+    --radius-card: 14px;
+}
+
+@layer base {
+    html {
+        -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+        @apply bg-ground font-sans text-ink;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-signal);
+        outline-offset: 2px;
+    }
+}
+
+@utility font-display-narrow {
+    font-family: var(--font-display);
+    font-stretch: 62%;
+    font-weight: 800;
+    text-transform: uppercase;
+    line-height: 0.95;
+}
+
+@utility label-caps {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+}
