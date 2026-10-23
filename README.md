@@ -15,8 +15,8 @@ comments and tests.
 | 1 | Foundation: schools, login, roles, invitations, users | US-27, US-31 | **done** |
 | 2 | School settings | US-01–06, US-08, US-28 | **done** |
 | 3 | Price tables | US-07 | **done** |
-| 4 | Students & instructors | US-17–21 | next |
-| 5 | Booking (shop, cart, checkout, email) | US-09–13, US-29 | |
+| 4 | Students & instructors | US-17–21 | **done** |
+| 5 | Booking (shop, cart, checkout, email) | US-09–13, US-29 | next |
 | 6 | Booking list | US-14–16 | |
 | 7 | Grouping & instructor assignment | US-22–24 | |
 | 8 | Dashboard & calendar | US-25, US-26 | |
@@ -141,6 +141,21 @@ The owner then invites staff under **Users**.
 - `SetCurrentSchool` runs **before** route-model binding (see
   `bootstrap/app.php`), so `/settings/price-tables/{id}/edit` can never load
   another school's record. A test proves it.
+
+### Students and instructors (step 4)
+
+- Students: `App\Livewire\Forms\StudentForm` (a Livewire Form object) holds
+  fields and rules, so the booking screen in step 5 can reuse it as-is.
+  Archiving sets `archived_at`; archived students stay in bookings. Search
+  covers name, phone (ignoring spaces, `/` and `-`) and accommodation.
+  A same-name-and-birthday match is shown as a non-blocking hint.
+- Instructors: IBAN and social security number use the `encrypted` cast and
+  are in `$hidden`; IBANs are checked with mod-97 (`App\Rules\Iban`). Staff
+  can see the list (for planning) but no financial data and no edit links;
+  editing is owner only. `instructor_sport` records which sports someone
+  teaches (plan question 13, used as a warning in step 7).
+- The social security number is only format-checked (4–30 characters) so
+  schools outside Austria work too.
 
 ### Language
 

@@ -5,7 +5,9 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\DashboardController;
 use App\Livewire\Account;
+use App\Livewire\Instructors;
 use App\Livewire\Settings;
+use App\Livewire\Students;
 use App\Livewire\Users;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +37,18 @@ Route::middleware('auth')->group(function () {
 
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('account', Account::class)->name('account');
+
+    // Students (US-17 to US-19): staff and owners.
+    Route::get('students', Students\Index::class)->name('students.index');
+    Route::get('students/new', Students\Edit::class)->name('students.create');
+    Route::get('students/{student}', Students\Edit::class)->name('students.edit');
+
+    // Instructors (US-20, US-21): everyone sees the list, owners edit.
+    Route::get('instructors', Instructors\Index::class)->name('instructors.index');
+    Route::middleware('can:admin')->group(function () {
+        Route::get('instructors/new', Instructors\Edit::class)->name('instructors.create');
+        Route::get('instructors/{instructor}/edit', Instructors\Edit::class)->name('instructors.edit');
+    });
 
     // Owner only, enforced here and again inside the component.
     Route::get('users', Users\Index::class)

@@ -34,7 +34,7 @@ class SkillLevel extends Model
     {
         return [
             __('Price tables') => fn () => $this->priceTables()->count(),
-            // Step 4 adds: students.
+            __('Students') => fn () => Student::query()->where('skill_level_id', $this->id)->count(),
         ];
     }
 }

@@ -33,6 +33,7 @@ class Sport extends Model
     {
         return [
             __('Price tables') => fn () => $this->priceTables()->count(),
+            __('Instructors') => fn () => $this->belongsToMany(Instructor::class)->count(),
         ];
     }
 }

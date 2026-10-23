@@ -6,7 +6,9 @@ use App\Actions\Schools\CreateSchoolDefaults;
 use App\Domain\Pricing\PriceTableForm;
 use App\Domain\Pricing\PriceTableValidator;
 use App\Domain\Pricing\SavePriceTable;
+use App\Models\Instructor;
 use App\Models\School;
+use App\Models\Student;
 use App\Models\User;
 use App\Support\CurrentSchool;
 use Illuminate\Database\Seeder;
@@ -47,7 +49,10 @@ class DatabaseSeeder extends Seeder
             'valid_until' => '2027-01-31',
         ]);
 
-        app(CurrentSchool::class)->runAs($school, fn () => $this->priceTables($school));
+        app(CurrentSchool::class)->runAs($school, function () use ($school) {
+            $this->priceTables($school);
+            $this->people($school);
+        });
 
         User::factory()->forSchool($school)->owner()->create([
             'name' => 'Martina Owner',
@@ -110,5 +115,49 @@ class DatabaseSeeder extends Seeder
             $private['prices']['full_day'][$h] = ['price' => (string) (75 * $h + 10), 'extra' => (string) (20 * $h + 5)];
         }
         $save($private);
+    }
+
+    private function people(School $school): void
+    {
+        fake()->seed(2026);
+        $levels = $school->skillLevels()->pluck('id')->all();
+        $accommodations = ['Hotel Alpenhof', 'Pension Edelweiss', 'Gasthof Post', 'Chalet Bergblick', 'Apartment Sonnhang', null];
+        $owners = ['Mutter', 'Vater', 'selbst'];
+
+        foreach (range(1, 36) as $i) {
+            Student::factory()->create([
+                'school_id' => $school->id,
+                'skill_level_id' => $levels[$i % count($levels)],
+                'date_of_birth' => fake()->dateTimeBetween($i % 5 === 0 ? '-45 years' : '-13 years', $i % 5 === 0 ? '-18 years' : '-4 years')->format('Y-m-d'),
+                'primary_phone_owner' => $i % 5 === 0 ? 'selbst' : $owners[$i % 2],
+                'accommodation' => $accommodations[$i % count($accommodations)],
+                'preferred_language' => ['DE', 'EN', 'NL', 'DE', 'CS'][$i % 5],
+                'medical_notes' => $i % 9 === 0 ? 'Nussallergie' : null,
+            ]);
+        }
+
+        $ski = $school->sports()->where('name', 'Ski')->value('id');
+        $board = $school->sports()->where('name', 'Snowboard')->value('id');
+        $team = [
+            ['Anna', 'Berger', [$ski], ['DE', 'EN'], 'Landesskilehrerin'],
+            ['Lukas', 'Huber', [$ski], ['DE', 'EN', 'NL'], 'Skilehrer'],
+            ['Sophie', 'Gruber', [$ski], ['DE', 'EN', 'FR'], 'Staatlich geprüft'],
+            ['Max', 'Wagner', [$ski, $board], ['DE', 'EN'], 'Landesskilehrer'],
+            ['Lena', 'Moser', [$board], ['DE', 'EN', 'IT'], 'Snowboardlehrerin'],
+            ['Paul', 'Steiner', [$ski], ['DE'], 'Anwärter'],
+        ];
+        foreach ($team as $i => [$first, $last, $sports, $languages, $cert]) {
+            $instructor = Instructor::factory()->create([
+                'school_id' => $school->id,
+                'first_name' => $first,
+                'last_name' => $last,
+                'email' => strtolower($first).'@skischule-demo.test',
+                'languages' => $languages,
+                'certification_level' => $cert,
+                'hourly_rate_cents' => 2200 + 200 * $i,
+                'is_active' => $i < 5,
+            ]);
+            $instructor->sports()->sync($sports);
+        }
     }
 }
