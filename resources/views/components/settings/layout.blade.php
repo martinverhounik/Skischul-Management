@@ -11,6 +11,7 @@
         ['route' => 'settings.meeting-points', 'label' => __('Meeting points')],
         ['route' => 'settings.add-ons', 'label' => __('Add-ons')],
         ['route' => 'settings.vouchers', 'label' => __('Vouchers')],
+        ['route' => 'settings.price-tables', 'label' => __('Price tables')],
     ];
 @endphp
 <div class="flex flex-wrap items-start gap-5">

@@ -53,5 +53,10 @@ Route::middleware('auth')->group(function () {
         Route::get('meeting-points', Settings\MeetingPoints::class)->name('meeting-points');
         Route::get('add-ons', Settings\AddOns::class)->name('add-ons');
         Route::get('vouchers', Settings\Vouchers::class)->name('vouchers');
+
+        // Price tables (build step 3, US-07)
+        Route::get('price-tables', Settings\PriceTables\Index::class)->name('price-tables');
+        Route::get('price-tables/new', Settings\PriceTables\Edit::class)->name('price-tables.create');
+        Route::get('price-tables/{priceTable}/edit', Settings\PriceTables\Edit::class)->name('price-tables.edit');
     });
 });

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToSchool;
 use App\Models\Concerns\GuardsDeletion;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * A school-defined ability level, sorted from beginner to advanced (US-03).
@@ -23,9 +24,17 @@ class SkillLevel extends Model
 
     protected $fillable = ['name', 'color', 'position'];
 
+    /** @return BelongsToMany<PriceTable, $this> */
+    public function priceTables(): BelongsToMany
+    {
+        return $this->belongsToMany(PriceTable::class);
+    }
+
     protected function usages(): array
     {
-        // Step 3 adds: price tables. Step 4 adds: students.
-        return [];
+        return [
+            __('Price tables') => fn () => $this->priceTables()->count(),
+            // Step 4 adds: students.
+        ];
     }
 }

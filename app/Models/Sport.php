@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToSchool;
 use App\Models\Concerns\GuardsDeletion;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * A sport the school offers, e.g. Ski, Snowboard (US-02).
@@ -22,9 +23,16 @@ class Sport extends Model
 
     protected $fillable = ['name', 'position'];
 
+    /** @return BelongsToMany<PriceTable, $this> */
+    public function priceTables(): BelongsToMany
+    {
+        return $this->belongsToMany(PriceTable::class);
+    }
+
     protected function usages(): array
     {
-        // Step 3 adds: price tables.
-        return [];
+        return [
+            __('Price tables') => fn () => $this->priceTables()->count(),
+        ];
     }
 }

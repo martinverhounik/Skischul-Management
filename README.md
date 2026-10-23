@@ -14,8 +14,8 @@ comments and tests.
 | --- | --- | --- | --- |
 | 1 | Foundation: schools, login, roles, invitations, users | US-27, US-31 | **done** |
 | 2 | School settings | US-01–06, US-08, US-28 | **done** |
-| 3 | Price tables | US-07 | next |
-| 4 | Students & instructors | US-17–21 | |
+| 3 | Price tables | US-07 | **done** |
+| 4 | Students & instructors | US-17–21 | next |
 | 5 | Booking (shop, cart, checkout, email) | US-09–13, US-29 | |
 | 6 | Booking list | US-14–16 | |
 | 7 | Grouping & instructor assignment | US-22–24 | |
@@ -118,6 +118,27 @@ The owner then invites staff under **Users**.
   Voucher percentages are stored as hundredths (1000 = 10 %).
 - Dates: SQLite stores `date` columns with a time part, so query them with
   `whereDate()`.
+
+### Price tables (step 3)
+
+- `price_tables` + pivots to sports, age groups, skill levels (the pivots use
+  `restrictOnDelete`, so the database also refuses to delete a setting in use),
+  `price_table_time_options` (which slots are offered, min hours for
+  private/guiding) and `price_table_prices` (one row per grid cell).
+- Time options store the timeslot **key**, not copied times, so editing a
+  course time changes every price table (US-06, US-30).
+- `App\Domain\Pricing\PriceTableForm` is the form shape, `PriceTableValidator`
+  holds every rule (incl. the switchable full-day rule and "each start day
+  must leave room for the minimum days before the end day"), `SavePriceTable`
+  stores it.
+- `PriceCalculator` (used from step 5): group = price per participant for the
+  number of **lesson** days × participants (closed days are not charged, the
+  end date stays). If closed days leave fewer lesson days than the table's
+  shortest row, the shortest row's day rate is used per lesson day.
+  Private/guiding = base price for the hours + extra fee × further participants.
+- `SetCurrentSchool` runs **before** route-model binding (see
+  `bootstrap/app.php`), so `/settings/price-tables/{id}/edit` can never load
+  another school's record. A test proves it.
 
 ### Language
 

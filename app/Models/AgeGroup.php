@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToSchool;
 use App\Models\Concerns\GuardsDeletion;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * An age band such as "Kids 5–9" (US-04). Bands may overlap.
@@ -33,9 +34,16 @@ class AgeGroup extends Model
         return $age >= $this->min_age && $age <= $this->max_age;
     }
 
+    /** @return BelongsToMany<PriceTable, $this> */
+    public function priceTables(): BelongsToMany
+    {
+        return $this->belongsToMany(PriceTable::class, 'price_table_age_group');
+    }
+
     protected function usages(): array
     {
-        // Step 3 adds: price tables.
-        return [];
+        return [
+            __('Price tables') => fn () => $this->priceTables()->count(),
+        ];
     }
 }
