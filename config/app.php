@@ -65,6 +65,10 @@ return [
     |
     */
 
+    // Local demos only: pretend today is this date (e.g. 2027-01-11) so the
+    // dashboard shows the seeded season. Ignored outside APP_ENV=local.
+    'demo_today' => env('DEMO_TODAY'),
+
     'timezone' => 'UTC', // store UTC; each school has its own display timezone,
 
     /*

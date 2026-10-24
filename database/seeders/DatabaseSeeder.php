@@ -7,6 +7,8 @@ use App\Domain\Booking\PlaceOrder;
 use App\Domain\Pricing\PriceTableForm;
 use App\Domain\Pricing\PriceTableValidator;
 use App\Domain\Pricing\SavePriceTable;
+use App\Models\Booking;
+use App\Models\CalendarEvent;
 use App\Models\Instructor;
 use App\Models\PriceTable;
 use App\Models\School;
@@ -201,5 +203,20 @@ class DatabaseSeeder extends Seeder
                 'students' => [['id' => $adult->id]],
             ]]);
         }
+
+        // Some bookings are already paid (dashboard numbers, US-25).
+        Booking::query()->orderBy('id')->take(4)->get()
+            ->each(fn (Booking $b) => $b->update(['payment_status' => 'paid', 'paid_at' => now()]));
+
+        // Calendar entries (US-26): a day off and a team meeting.
+        $lena = Instructor::query()->where('first_name', 'Lena')->first();
+        CalendarEvent::query()->create([
+            'title' => 'Urlaub', 'starts_on' => $start->addDays(3)->toDateString(), 'ends_on' => $start->addDays(4)->toDateString(),
+            'instructor_id' => $lena?->id, 'created_by' => $owner->id,
+        ]);
+        CalendarEvent::query()->create([
+            'title' => 'Teambesprechung', 'starts_on' => $start->toDateString(), 'ends_on' => $start->toDateString(),
+            'starts_at' => '16:30', 'ends_at' => '17:30', 'created_by' => $owner->id,
+        ]);
     }
 }

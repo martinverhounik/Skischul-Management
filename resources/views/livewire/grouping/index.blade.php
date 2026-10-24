@@ -206,7 +206,7 @@
                                         <div class="grid gap-2 sm:grid-cols-2">
                                             <div class="flex min-w-0 flex-col gap-1">
                                                 <label for="gi-{{ $group->id }}" class="label-caps">{{ __('Instructor') }}</label>
-                                                <select id="gi-{{ $group->id }}" wire:change="assignGroup({{ $group->id }}, $event.target.value)" class="{{ $field }} w-full min-w-0 {{ $group->instructor_id ? '' : 'border-signal' }}">
+                                                <select id="gi-{{ $group->id }}" wire:key="gi-{{ $group->id }}-{{ $redraw }}" wire:change="assignGroup({{ $group->id }}, $event.target.value)" class="{{ $field }} w-full min-w-0 {{ $group->instructor_id ? '' : 'border-signal' }}">
                                                     <option value="">{{ __('— none —') }}</option>
                                                     @foreach ($instructors as $i)
                                                         @continue(! $i->is_active && $i->id !== $group->instructor_id)
@@ -280,7 +280,7 @@
                                     </td>
                                     <td class="px-3 py-2.5">
                                         <label class="sr-only" for="pi-{{ $lesson->id }}">{{ __('Instructor') }}</label>
-                                        <select id="pi-{{ $lesson->id }}" wire:change="assignPrivate({{ $lesson->id }}, $event.target.value)" class="{{ $field }} w-full {{ $lesson->instructor_id ? '' : 'border-signal' }}">
+                                        <select id="pi-{{ $lesson->id }}" wire:key="pi-{{ $lesson->id }}-{{ $redraw }}" wire:change="assignPrivate({{ $lesson->id }}, $event.target.value)" class="{{ $field }} w-full {{ $lesson->instructor_id ? '' : 'border-signal' }}">
                                             <option value="">{{ __('— none —') }}</option>
                                             @foreach ($instructors as $i)
                                                 @continue(! $i->is_active && $i->id !== $lesson->instructor_id)

@@ -3,10 +3,10 @@
 use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
-use App\Http\Controllers\DashboardController;
 use App\Livewire\Account;
 use App\Livewire\Booking;
 use App\Livewire\Bookings;
+use App\Livewire\Dashboard;
 use App\Livewire\Grouping\Index;
 use App\Livewire\Instructors;
 use App\Livewire\Settings;
@@ -38,7 +38,7 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('logout', [LoginController::class, 'destroy'])->name('logout');
 
-    Route::get('dashboard', DashboardController::class)->name('dashboard');
+    Route::get('dashboard', Dashboard::class)->name('dashboard');
     Route::get('account', Account::class)->name('account');
 
     // Booking (US-09 to US-13): back office only, staff and owners.

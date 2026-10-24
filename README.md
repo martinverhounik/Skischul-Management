@@ -19,7 +19,7 @@ comments and tests.
 | 5 | Booking (shop, cart, checkout, email) | US-09–13, US-29 | **done** |
 | 6 | Booking list | US-14–16 | **done** |
 | 7 | Grouping & instructor assignment | US-22–24 | **done** |
-| 8 | Dashboard & calendar | US-25, US-26 | next |
+| 8 | Dashboard & calendar | US-25, US-26 | **done** |
 
 ## Stack
 
@@ -42,6 +42,9 @@ php artisan serve
 
 Demo logins (seeded, local only): `owner@example.com` and `staff@example.com`,
 password `password`. Emails go to `storage/logs/laravel.log` (`MAIL_MAILER=log`).
+
+The demo bookings are in January 2027. To see them on the dashboard, set
+`DEMO_TODAY=2027-01-11` in `.env` (only works with `APP_ENV=local`).
 
 Run the tests and the code-style check:
 
@@ -221,9 +224,29 @@ The owner then invites staff under **Users**.
   `AssignmentGuard::check()` refuses inactive instructors and overlapping
   times (back-to-back is fine) and *warns* when the instructor does not teach
   the sport; the screen asks "assign anyway". Step 8 adds calendar absences
-  (sick leave …) to the overlap check.
+  (sick leave …) to the overlap check (done).
 - Cancelling a booking removes its students from groups and clears private
   lesson instructors.
+
+### Dashboard and calendar (step 8)
+
+- `/dashboard` is the Livewire component `App\Livewire\Dashboard`.
+- Numbers (US-25), `App\Domain\Dashboard\WeekNumbers`: bookings with at
+  least one lesson in the school's week (`week_starts_on`, default Sunday)
+  or today; cancelled ones never count. Paid/unpaid of this week, the open
+  amount and a list of unpaid bookings linking to each booking. The black
+  tile links to the booking screen.
+- Calendar (US-26), `App\Domain\Calendar\CalendarFeed`: reads groups,
+  private lessons and not-yet-grouped students **live** from the same tables
+  Grouping uses, so there is only one assignment. Changing the instructor in
+  the calendar calls `GroupManager` (same rules and warnings). Day, week and
+  month view; filters by course (price table) and instructor. `DayLayout`
+  puts overlapping entries side by side.
+- Standalone entries: `calendar_events` (title, from/until day, optional
+  times = all day if empty, optional instructor). `SaveCalendarEvent`
+  refuses an entry for an instructor who teaches at that time;
+  `AssignmentGuard` refuses a course during the instructor's entry. Entries
+  without an instructor block nobody. They never appear in Grouping.
 
 ### Language
 

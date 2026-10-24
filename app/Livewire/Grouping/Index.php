@@ -39,6 +39,12 @@ class Index extends Component
      */
     public ?array $pending = null;
 
+    /**
+     * Bumped when an assignment is refused or cancelled, so the select
+     * boxes are redrawn and show the stored instructor again.
+     */
+    public int $redraw = 0;
+
     public function mount(): void
     {
         if (! $this->parse($this->date)) {
@@ -190,6 +196,7 @@ class Index extends Component
     public function cancelPending(): void
     {
         $this->pending = null;
+        $this->redraw++;
     }
 
     private function assign(string $type, int $id, string $instructorId, bool $confirmed, callable $action): void
@@ -202,6 +209,7 @@ class Index extends Component
             $warnings = $action($instructor, $confirmed);
         } catch (ValidationException $e) {
             $this->addError('instructor', implode(' ', $e->errors()['instructor'] ?? [$e->getMessage()]));
+            $this->redraw++;
 
             return;
         }
