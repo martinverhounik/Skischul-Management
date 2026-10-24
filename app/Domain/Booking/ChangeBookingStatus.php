@@ -4,6 +4,8 @@ namespace App\Domain\Booking;
 
 use App\Enums\PaymentStatus;
 use App\Models\Booking;
+use App\Models\GroupMember;
+use App\Models\LessonDay;
 use App\Models\User;
 use App\Models\Voucher;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +47,12 @@ class ChangeBookingStatus
         DB::transaction(function () use ($booking, $user, $reason) {
             $booking->forceFill(['cancelled_at' => now()])->save();
             $this->releaseVoucher($booking);
+
+            // US-16: the participants leave their groups and the private
+            // lessons lose their instructor, so planning figures stay right.
+            $lessonDayIds = LessonDay::query()->whereIn('booking_line_id', $booking->lines()->pluck('id'))->pluck('id');
+            GroupMember::query()->whereIn('lesson_day_id', $lessonDayIds)->delete();
+            LessonDay::query()->whereKey($lessonDayIds)->update(['instructor_id' => null]);
             $booking->record('cancelled', $user, $reason ? ['reason' => $reason] : []);
         });
     }

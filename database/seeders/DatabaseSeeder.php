@@ -3,15 +3,19 @@
 namespace Database\Seeders;
 
 use App\Actions\Schools\CreateSchoolDefaults;
+use App\Domain\Booking\PlaceOrder;
 use App\Domain\Pricing\PriceTableForm;
 use App\Domain\Pricing\PriceTableValidator;
 use App\Domain\Pricing\SavePriceTable;
 use App\Models\Instructor;
+use App\Models\PriceTable;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\User;
 use App\Support\CurrentSchool;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 /**
  * Demo data for local development only. Never run this on production.
@@ -54,10 +58,12 @@ class DatabaseSeeder extends Seeder
             $this->people($school);
         });
 
-        User::factory()->forSchool($school)->owner()->create([
+        $owner = User::factory()->forSchool($school)->owner()->create([
             'name' => 'Martina Owner',
             'email' => 'owner@example.com',
         ]);
+
+        app(CurrentSchool::class)->runAs($school, fn () => $this->bookings($school, $owner));
 
         User::factory()->forSchool($school)->create([
             'name' => 'Stefan Staff',
@@ -158,6 +164,42 @@ class DatabaseSeeder extends Seeder
                 'is_active' => $i < 5,
             ]);
             $instructor->sports()->sync($sports);
+        }
+    }
+
+    /** A busy week from Sunday 10 January 2027: kids courses and private lessons. */
+    private function bookings(School $school, User $owner): void
+    {
+        $kids = PriceTable::query()->where('name', 'Kinderskikurs')->first();
+        $private = PriceTable::query()->where('course_type', 'private')->first();
+        $ski = $school->sports()->where('name', 'Ski')->value('id');
+        $start = CarbonImmutable::parse('2027-01-10');
+        $levels = $kids->skillLevels->pluck('id')->all();
+
+        $children = Student::query()->whereIn('skill_level_id', $levels)->get()
+            ->filter(fn (Student $s) => $s->ageOn($start) >= 6 && $s->ageOn($start) <= 14)->values();
+        $adults = Student::query()->get()->filter(fn (Student $s) => $s->ageOn($start) >= 18)->values();
+
+        $book = fn (string $name, array $items) => app(PlaceOrder::class)->handle($school, $owner, $items, [], [
+            'booker_name' => $name, 'email' => Str::slug($name).'@example.com', 'phone' => '+43 664 1234567',
+            'street' => 'Dorfstraße', 'house_number' => '7', 'postal_code' => '6370', 'city' => 'Kitzbühel',
+            'country' => 'AT', 'payment_method' => 'card',
+        ], null);
+
+        foreach ($children->chunk(2) as $i => $pair) {
+            $book('Familie '.$pair->first()->last_name, [[
+                'price_table_id' => $kids->id, 'sport_id' => $ski, 'timeslot_key' => 'morning',
+                'start_date' => $start->toDateString(), 'days' => 5,
+                'students' => $pair->map(fn ($s) => ['id' => $s->id])->values()->all(),
+            ]]);
+        }
+
+        foreach ($adults->take(3)->values() as $i => $adult) {
+            $book($adult->fullName(), [[
+                'price_table_id' => $private->id, 'sport_id' => $ski,
+                'start_date' => $start->addDay()->toDateString(), 'start_time' => ['10:00', '13:30', '14:00'][$i], 'hours' => 2,
+                'students' => [['id' => $adult->id]],
+            ]]);
         }
     }
 }

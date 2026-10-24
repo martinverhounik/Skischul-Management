@@ -18,8 +18,8 @@ comments and tests.
 | 4 | Students & instructors | US-17–21 | **done** |
 | 5 | Booking (shop, cart, checkout, email) | US-09–13, US-29 | **done** |
 | 6 | Booking list | US-14–16 | **done** |
-| 7 | Grouping & instructor assignment | US-22–24 | next |
-| 8 | Dashboard & calendar | US-25, US-26 | |
+| 7 | Grouping & instructor assignment | US-22–24 | **done** |
+| 8 | Dashboard & calendar | US-25, US-26 | next |
 
 ## Stack
 
@@ -195,10 +195,35 @@ The owner then invites staff under **Users**.
   checkout run with `?booking={id}`, and `UpdateBooking` re-checks every rule
   and rewrites the courses. The voucher stays; its discount is recalculated
   without counting a second use.
-- **Note for step 7:** `BookingWriter::writeContent()` currently replaces a
-  booking's lines and lesson days on every change. Once groups and instructor
-  assignments hang off lesson days, unchanged lesson days must be kept (or
-  assignments re-attached) so a small edit does not drop them.
+- Edits keep grouping: `BookingWriter::writeContent()` remembers group places
+  and private-lesson instructors before rewriting and re-attaches them to the
+  matching new lesson days (see step 7).
+
+### Grouping and instructor assignment (step 7)
+
+- `/grouping`: day view (plan one day) and week view (counts per day), with a
+  time navigation bar (US-23). The week starts on the school's
+  `week_starts_on` setting.
+- **Counting** (owner decision): `App\Domain\Grouping\Grouping::cohorts()`
+  puts every group-course lesson day of a non-cancelled booking into a
+  `Cohort` = date × timeslot × sport × age group. The age group is the price
+  table's age group that fits the student's age (else its youngest one).
+  Instructors needed = ceil(students ÷ the price table's max participants).
+  Skill levels are only shown as information inside a cohort.
+- **Groups** (`groups`, `group_members`) exist per day. `GroupManager`:
+  `autoSplit` (as many groups as instructors needed, filled by skill level),
+  `copyPreviousDay` (looks back up to 7 days, copies names, meeting points,
+  members who have a lesson today and the instructor if still free),
+  `moveStudent` (only between groups of the same day, time and sport, so
+  students can move between age groups), `deleteGroup`.
+- **Instructors**: groups have `instructor_id`, private lessons have
+  `lesson_days.instructor_id` (plus `meeting_point_id`).
+  `AssignmentGuard::check()` refuses inactive instructors and overlapping
+  times (back-to-back is fine) and *warns* when the instructor does not teach
+  the sport; the screen asks "assign anyway". Step 8 adds calendar absences
+  (sick leave …) to the overlap check.
+- Cancelling a booking removes its students from groups and clears private
+  lesson instructors.
 
 ### Language
 

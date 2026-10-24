@@ -21,7 +21,9 @@ class MeetingPoint extends Model
 
     protected function usages(): array
     {
-        // Step 7 adds: groups and private lessons.
-        return [];
+        return [
+            __('Groups') => fn () => Group::query()->where('meeting_point_id', $this->id)->count(),
+            __('Private lessons') => fn () => LessonDay::query()->where('meeting_point_id', $this->id)->count(),
+        ];
     }
 }

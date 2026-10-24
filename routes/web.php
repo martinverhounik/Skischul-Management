@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Livewire\Account;
 use App\Livewire\Booking;
 use App\Livewire\Bookings;
+use App\Livewire\Grouping\Index;
 use App\Livewire\Instructors;
 use App\Livewire\Settings;
 use App\Livewire\Students;
@@ -45,6 +46,9 @@ Route::middleware('auth')->group(function () {
     Route::get('booking/checkout', Booking\Checkout::class)->name('booking.checkout');
     Route::get('bookings', Bookings\Index::class)->name('bookings.index');
     Route::get('bookings/{booking}', Bookings\Show::class)->name('bookings.show');
+
+    // Grouping and instructor assignment (US-22 to US-24): staff and owners.
+    Route::get('grouping', Index::class)->name('grouping');
 
     // Students (US-17 to US-19): staff and owners.
     Route::get('students', Students\Index::class)->name('students.index');
